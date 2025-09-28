@@ -1,0 +1,13 @@
+# LiveKit static site configuration
+site:
+  name: "BlueShield AI Agent Demo"
+  description: "Manager demo interface for BlueShield AI agent"
+
+routes:
+  - path: "/"
+    file: "index.html"
+
+agent_integration:
+  agent_id: "CA_wLGz7oXdLH7R"
+  subdomain: "agent1-pcpqcnge"
+  auto_connect: true
