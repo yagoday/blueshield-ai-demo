@@ -173,17 +173,17 @@
         </div>
 
         <div class="demo-section">
-            <h2 style="margin-bottom: 20px;">🎯 One-Click Demo Access</h2>
+            <h2 style="margin-bottom: 20px;">🎯 Connect to Live AI Agent</h2>
             <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
-                Click below to instantly connect to our AI agent and test the full conversation flow
+                Click below to open LiveKit Meet and get connection details for our live AI agent
             </p>
 
             <button class="big-button" onclick="startDemo()" id="demoBtn">
-                🚀 Start Voice Demo
+                🚀 Get Connection Details
             </button>
 
             <p style="margin-top: 20px; color: #666;">
-                <small>💡 Make sure your microphone is enabled in your browser</small>
+                <small>💡 This will open LiveKit Meet and show you exactly how to connect</small>
             </p>
         </div>
 
@@ -281,10 +281,15 @@
             const timestamp = Date.now();
             const roomName = `blueshield-demo-${timestamp}`;
 
-            // Create LiveKit Meet URL that will connect to your agent
-            // Using a simple room-based approach where your agent will auto-join
-            const liveKitUrl = 'wss://agent1-pcpqcnge.livekit.cloud';
-            const meetUrl = `https://meet.livekit.io/custom?liveKitUrl=${encodeURIComponent(liveKitUrl)}&room=${encodeURIComponent(roomName)}&userInfo=%7B%22identity%22%3A%22manager-demo%22%2C%22name%22%3A%22Demo%20User%22%7D`;
+            // Open LiveKit Meet with instructions to manually connect
+            // Since we need token generation, we'll provide clear instructions
+            const meetUrl = 'https://meet.livekit.io/';
+
+            // Store connection details for instructions
+            window.connectionDetails = {
+                url: 'wss://agent1-pcpqcnge.livekit.cloud',
+                room: roomName
+            };
 
             setTimeout(() => {
                 // Open the LiveKit Meet room
@@ -306,6 +311,7 @@
         }
 
         function showInstructions() {
+            const details = window.connectionDetails;
             const instructionDiv = document.createElement('div');
             instructionDiv.style.cssText = `
                 position: fixed;
@@ -318,38 +324,48 @@
                 padding: 30px;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.3);
                 z-index: 2000;
-                max-width: 500px;
+                max-width: 600px;
                 text-align: center;
             `;
             instructionDiv.innerHTML = `
-                <h3 style="color: #3498db; margin-bottom: 20px;">🎯 LiveKit Meet Instructions</h3>
-                <p style="margin-bottom: 20px;">In the LiveKit Meet window:</p>
+                <h3 style="color: #3498db; margin-bottom: 20px;">🎯 LiveKit Meet Setup</h3>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <h4 style="margin-top: 0;">Connection Details:</h4>
+                    <p style="margin: 10px 0;"><strong>LiveKit URL:</strong><br>
+                    <code style="background: #e9ecef; padding: 5px 10px; border-radius: 5px; font-size: 12px;">wss://agent1-pcpqcnge.livekit.cloud</code></p>
+                    <p style="margin: 10px 0;"><strong>Room Name:</strong><br>
+                    <code style="background: #e9ecef; padding: 5px 10px; border-radius: 5px; font-size: 12px;">${details.room}</code></p>
+                </div>
+                <p style="margin-bottom: 20px;"><strong>In the LiveKit Meet window:</strong></p>
                 <ol style="text-align: left; margin-bottom: 20px;">
-                    <li><strong>Enter room name:</strong> Use any name (e.g., "demo")</li>
+                    <li><strong>Paste the LiveKit URL</strong> in the URL field</li>
+                    <li><strong>Enter the room name</strong> shown above</li>
+                    <li><strong>Enter your name</strong> (e.g., "Manager Demo")</li>
                     <li><strong>Click "Connect"</strong></li>
                     <li><strong>Allow microphone access</strong></li>
-                    <li><strong>Wait for agent to join</strong> (should be automatic)</li>
+                    <li><strong>Wait for agent to join</strong> (automatic)</li>
                     <li><strong>Start talking!</strong> Say "Hello" to begin</li>
                 </ol>
                 <button onclick="this.parentElement.remove()" style="
                     background: #3498db;
                     color: white;
                     border: none;
-                    padding: 10px 20px;
+                    padding: 12px 24px;
                     border-radius: 8px;
                     cursor: pointer;
                     font-weight: bold;
+                    font-size: 16px;
                 ">Got it!</button>
             `;
 
             document.body.appendChild(instructionDiv);
 
-            // Remove after 15 seconds if not manually closed
+            // Remove after 20 seconds if not manually closed
             setTimeout(() => {
                 if (document.body.contains(instructionDiv)) {
                     document.body.removeChild(instructionDiv);
                 }
-            }, 15000);
+            }, 20000);
         }
 
         function showSessionInfo(roomName) {
