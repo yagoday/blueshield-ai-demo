@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlueShield AI Agent - Manager Demo</title>
     <script src="https://unpkg.com/livekit-client@2.5.7/dist/livekit-client.umd.js"></script>
+    <script src="https://unpkg.com/jose@5.2.0/dist/browser/index.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -271,16 +272,96 @@
             }
         }
 
+        async function generateToken(roomName, identity) {
+            // LiveKit credentials
+            const apiKey = 'APIWgQBr9XxdpQi';
+            const apiSecret = 'O1akQgMrRpJfv7Fr3JwqfinP6RnnbdvdIDf3lSI480RA';
+
+            // Create JWT payload
+            const payload = {
+                video: {
+                    roomJoin: true,
+                    room: roomName,
+                    canPublish: true,
+                    canSubscribe: true,
+                    canPublishData: true
+                },
+                sub: identity,
+                iss: apiKey,
+                name: 'Demo User',
+                nbf: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + (60 * 60) // 1 hour
+            };
+
+            try {
+                // Use jose library to sign the token
+                const secret = new TextEncoder().encode(apiSecret);
+                const token = await new jose.SignJWT(payload)
+                    .setProtectedHeader({ alg: 'HS256' })
+                    .setIssuedAt()
+                    .setExpirationTime('1h')
+                    .sign(secret);
+
+                return token;
+            } catch (error) {
+                console.error('Token generation failed:', error);
+                // Fallback to a simpler approach if jose fails
+                return await generateSimpleToken(roomName, identity, apiKey, apiSecret);
+            }
+        }
+
+        async function generateSimpleToken(roomName, identity, apiKey, apiSecret) {
+            // Simple base64 encoding approach for demo
+            const header = { alg: 'HS256', typ: 'JWT' };
+            const payload = {
+                video: {
+                    roomJoin: true,
+                    room: roomName,
+                    canPublish: true,
+                    canSubscribe: true,
+                    canPublishData: true
+                },
+                sub: identity,
+                iss: apiKey,
+                name: 'Demo User',
+                nbf: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + 3600
+            };
+
+            const base64Header = btoa(JSON.stringify(header)).replace(/=/g, '');
+            const base64Payload = btoa(JSON.stringify(payload)).replace(/=/g, '');
+
+            // For demo purposes, we'll use a simplified approach
+            // In production, you'd use proper HMAC-SHA256 signing
+            const signature = btoa(apiSecret + base64Header + base64Payload).replace(/=/g, '');
+
+            return `${base64Header}.${base64Payload}.${signature}`;
+        }
+
         async function connectToAgent() {
             try {
-                updateStatus('Connecting...', 'connecting');
+                updateStatus('Generating token...', 'connecting');
 
-                // Generate unique room name
+                // Generate unique room name and identity
                 const timestamp = Date.now();
                 const roomName = `blueshield-demo-${timestamp}`;
+                const identity = `demo-user-${timestamp}`;
 
-                // Create simple token (this is a demo - in production you'd get this from your backend)
                 const wsUrl = 'wss://agent1-pcpqcnge.livekit.cloud';
+
+                // Generate authentication token
+                let token;
+                try {
+                    token = await generateToken(roomName, identity);
+                    console.log('Token generated successfully');
+                } catch (error) {
+                    console.error('Token generation failed:', error);
+                    updateStatus('Token generation failed - using manual method', 'disconnected');
+                    showManualInstructions(roomName);
+                    return;
+                }
+
+                updateStatus('Connecting to agent...', 'connecting');
 
                 // Initialize LiveKit room
                 room = new LiveKitClient.Room({
@@ -310,11 +391,9 @@
                     }
                 });
 
-                // Connect to room with a simple approach
-                // For demo purposes, we'll try to connect directly
+                // Connect to room with proper token
                 try {
-                    // Try to connect using LiveKit Meet's public demo approach
-                    await room.connect(wsUrl, '', {
+                    await room.connect(wsUrl, token, {
                         autoSubscribe: true,
                         publishDefaults: {
                             microphone: true,
@@ -322,7 +401,8 @@
                         }
                     });
                 } catch (error) {
-                    console.error('Direct connection failed, showing manual instructions:', error);
+                    console.error('Connection failed:', error);
+                    updateStatus('Connection failed - using manual method', 'disconnected');
                     showManualInstructions(roomName);
                 }
 
