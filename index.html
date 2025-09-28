@@ -273,25 +273,28 @@
 
         function startDemo() {
             const btn = document.getElementById('demoBtn');
-            btn.textContent = '⏳ Generating Session...';
+            btn.textContent = '⏳ Opening Demo Room...';
             btn.disabled = true;
 
             // Generate unique session identifiers
             sessionCount++;
             const timestamp = Date.now();
-            const roomName = `manager-demo-${timestamp}`;
+            const roomName = `blueshield-demo-${timestamp}`;
 
-            // Create LiveKit Meet URL with room parameter
-            // LiveKit Meet will handle token generation for public demos
+            // Create LiveKit Meet URL that will connect to your agent
+            // Using a simple room-based approach where your agent will auto-join
             const liveKitUrl = 'wss://agent1-pcpqcnge.livekit.cloud';
-            const meetUrl = `https://meet.livekit.io/?url=${encodeURIComponent(liveKitUrl)}&room=${encodeURIComponent(roomName)}`;
+            const meetUrl = `https://meet.livekit.io/custom?liveKitUrl=${encodeURIComponent(liveKitUrl)}&room=${encodeURIComponent(roomName)}&userInfo=%7B%22identity%22%3A%22manager-demo%22%2C%22name%22%3A%22Demo%20User%22%7D`;
 
             setTimeout(() => {
-                // Open LiveKit Meet in new tab
+                // Open the LiveKit Meet room
                 const newWindow = window.open(meetUrl, '_blank');
 
                 if (!newWindow) {
                     alert('Please allow popups for this demo to work properly');
+                } else {
+                    // Show instructions for LiveKit Meet
+                    showInstructions();
                 }
 
                 btn.textContent = '🚀 Start Voice Demo';
@@ -300,6 +303,53 @@
                 // Show success message
                 showSessionInfo(roomName);
             }, 1500);
+        }
+
+        function showInstructions() {
+            const instructionDiv = document.createElement('div');
+            instructionDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                border: 2px solid #3498db;
+                border-radius: 15px;
+                padding: 30px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                z-index: 2000;
+                max-width: 500px;
+                text-align: center;
+            `;
+            instructionDiv.innerHTML = `
+                <h3 style="color: #3498db; margin-bottom: 20px;">🎯 LiveKit Meet Instructions</h3>
+                <p style="margin-bottom: 20px;">In the LiveKit Meet window:</p>
+                <ol style="text-align: left; margin-bottom: 20px;">
+                    <li><strong>Enter room name:</strong> Use any name (e.g., "demo")</li>
+                    <li><strong>Click "Connect"</strong></li>
+                    <li><strong>Allow microphone access</strong></li>
+                    <li><strong>Wait for agent to join</strong> (should be automatic)</li>
+                    <li><strong>Start talking!</strong> Say "Hello" to begin</li>
+                </ol>
+                <button onclick="this.parentElement.remove()" style="
+                    background: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                ">Got it!</button>
+            `;
+
+            document.body.appendChild(instructionDiv);
+
+            // Remove after 15 seconds if not manually closed
+            setTimeout(() => {
+                if (document.body.contains(instructionDiv)) {
+                    document.body.removeChild(instructionDiv);
+                }
+            }, 15000);
         }
 
         function showSessionInfo(roomName) {
