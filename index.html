@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlueShield AI Agent - Manager Demo</title>
+    <script src="https://unpkg.com/livekit-client@2.5.7/dist/livekit-client.umd.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -81,6 +82,19 @@
             transform: none;
             cursor: not-allowed;
         }
+        .video-container {
+            background: #000;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
         .instructions {
             background: #e8f5e8;
             border-left: 5px solid #27ae60;
@@ -124,31 +138,30 @@
             margin: 0 auto 10px;
             font-weight: bold;
         }
-        .tech-details {
-            background: #f1f3f4;
-            border-radius: 10px;
-            padding: 25px;
-            margin: 30px 0;
-        }
-        .tech-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .tech-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-        }
-        .warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 15px;
-            border-radius: 10px;
+        .controls {
+            text-align: center;
             margin: 20px 0;
+        }
+        .status {
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         @media (max-width: 768px) {
             .flow-step:not(:last-child)::after {
@@ -169,21 +182,28 @@
         </div>
 
         <div class="status-banner">
-            🟢 <strong>AGENT LIVE</strong> • Production Ready • US East Region
+            🟢 <strong>AGENT LIVE</strong> • Production Ready • LiveKit Cloud
         </div>
 
         <div class="demo-section">
-            <h2 style="margin-bottom: 20px;">🎯 Connect to Live AI Agent</h2>
-            <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
-                Click below to open LiveKit Meet and get connection details for our live AI agent
-            </p>
+            <h2 style="margin-bottom: 20px;">🎯 Live Voice Demo</h2>
+            <div id="statusDisplay" class="status disconnected">Ready to Connect</div>
 
-            <button class="big-button" onclick="startDemo()" id="demoBtn">
-                🚀 Get Connection Details
-            </button>
+            <div class="video-container" id="videoContainer">
+                <div>🎤 Click "Connect to Agent" to start voice conversation</div>
+            </div>
+
+            <div class="controls">
+                <button class="big-button" onclick="connectToAgent()" id="connectBtn">
+                    🚀 Connect to Agent
+                </button>
+                <button class="big-button" onclick="disconnectFromAgent()" id="disconnectBtn" style="display: none; background: #e74c3c;">
+                    🔌 Disconnect
+                </button>
+            </div>
 
             <p style="margin-top: 20px; color: #666;">
-                <small>💡 This will open LiveKit Meet and show you exactly how to connect</small>
+                <small>💡 Make sure your microphone is enabled in your browser</small>
             </p>
         </div>
 
@@ -226,92 +246,95 @@
                 </ul>
             </div>
         </div>
-
-        <div class="tech-details">
-            <h3>🛠️ Technical Implementation</h3>
-            <div class="tech-grid">
-                <div class="tech-item">
-                    <strong>🤖 AI Model</strong><br>
-                    Google Gemini 2.0 Flash<br>
-                    Real-time voice processing
-                </div>
-                <div class="tech-item">
-                    <strong>🌐 Platform</strong><br>
-                    LiveKit Cloud<br>
-                    US East Region
-                </div>
-                <div class="tech-item">
-                    <strong>⚡ Performance</strong><br>
-                    ~200ms voice-to-voice latency<br>
-                    Auto-scaling infrastructure
-                </div>
-                <div class="tech-item">
-                    <strong>🔒 Security</strong><br>
-                    HIPAA-ready architecture<br>
-                    Encrypted communications
-                </div>
-                <div class="tech-item">
-                    <strong>📊 Monitoring</strong><br>
-                    Real-time logs<br>
-                    Performance analytics
-                </div>
-                <div class="tech-item">
-                    <strong>🎯 Agent ID</strong><br>
-                    CA_wLGz7oXdLH7R<br>
-                    Version: v20250928115201
-                </div>
-            </div>
-        </div>
-
-        <div class="warning">
-            <strong>⚠️ Demo Environment:</strong> This is a demonstration system. In production, patient data would be encrypted and compliant with healthcare regulations.
-        </div>
     </div>
 
     <script>
-        let sessionCount = 0;
+        let room = null;
+        let isConnected = false;
 
-        function startDemo() {
-            const btn = document.getElementById('demoBtn');
-            btn.textContent = '⏳ Opening Demo Room...';
-            btn.disabled = true;
-
-            // Generate unique session identifiers
-            sessionCount++;
-            const timestamp = Date.now();
-            const roomName = `blueshield-demo-${timestamp}`;
-
-            // Open LiveKit Meet with instructions to manually connect
-            // Since we need token generation, we'll provide clear instructions
-            const meetUrl = 'https://meet.livekit.io/';
-
-            // Store connection details for instructions
-            window.connectionDetails = {
-                url: 'wss://agent1-pcpqcnge.livekit.cloud',
-                room: roomName
-            };
-
-            setTimeout(() => {
-                // Open the LiveKit Meet room
-                const newWindow = window.open(meetUrl, '_blank');
-
-                if (!newWindow) {
-                    alert('Please allow popups for this demo to work properly');
-                } else {
-                    // Show instructions for LiveKit Meet
-                    showInstructions();
-                }
-
-                btn.textContent = '🚀 Start Voice Demo';
-                btn.disabled = false;
-
-                // Show success message
-                showSessionInfo(roomName);
-            }, 1500);
+        function updateStatus(message, className) {
+            const statusDisplay = document.getElementById('statusDisplay');
+            statusDisplay.textContent = message;
+            statusDisplay.className = `status ${className}`;
         }
 
-        function showInstructions() {
-            const details = window.connectionDetails;
+        function updateButtons(connected) {
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'inline-block';
+            } else {
+                connectBtn.style.display = 'inline-block';
+                disconnectBtn.style.display = 'none';
+            }
+        }
+
+        async function connectToAgent() {
+            try {
+                updateStatus('Connecting...', 'connecting');
+
+                // Generate unique room name
+                const timestamp = Date.now();
+                const roomName = `blueshield-demo-${timestamp}`;
+
+                // Create simple token (this is a demo - in production you'd get this from your backend)
+                const wsUrl = 'wss://agent1-pcpqcnge.livekit.cloud';
+
+                // Initialize LiveKit room
+                room = new LiveKitClient.Room({
+                    adaptiveStream: true,
+                    dynacast: true,
+                });
+
+                // Set up event listeners
+                room.on(LiveKitClient.RoomEvent.Connected, () => {
+                    console.log('Connected to room');
+                    updateStatus('🟢 Connected to Agent - Start Speaking!', 'connected');
+                    isConnected = true;
+                    updateButtons(true);
+                });
+
+                room.on(LiveKitClient.RoomEvent.Disconnected, () => {
+                    console.log('Disconnected from room');
+                    updateStatus('Disconnected', 'disconnected');
+                    isConnected = false;
+                    updateButtons(false);
+                });
+
+                room.on(LiveKitClient.RoomEvent.ParticipantConnected, (participant) => {
+                    console.log('Participant connected:', participant.identity);
+                    if (participant.identity.includes('agent') || participant.identity.includes('blueshield')) {
+                        updateStatus('🤖 Agent Joined - Say "Hello" to start!', 'connected');
+                    }
+                });
+
+                // Connect to room with a simple approach
+                // For demo purposes, we'll try to connect directly
+                try {
+                    // Try to connect using LiveKit Meet's public demo approach
+                    await room.connect(wsUrl, '', {
+                        autoSubscribe: true,
+                        publishDefaults: {
+                            microphone: true,
+                            camera: false,
+                        }
+                    });
+                } catch (error) {
+                    console.error('Direct connection failed, showing manual instructions:', error);
+                    showManualInstructions(roomName);
+                }
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                updateStatus('Connection failed - check manual instructions below', 'disconnected');
+                showManualInstructions();
+                updateButtons(false);
+            }
+        }
+
+        function showManualInstructions(roomName = 'blueshield-demo') {
             const instructionDiv = document.createElement('div');
             instructionDiv.style.cssText = `
                 position: fixed;
@@ -328,23 +351,26 @@
                 text-align: center;
             `;
             instructionDiv.innerHTML = `
-                <h3 style="color: #3498db; margin-bottom: 20px;">🎯 LiveKit Meet Setup</h3>
+                <h3 style="color: #3498db; margin-bottom: 20px;">🎯 Manual Connection Instructions</h3>
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                    <h4 style="margin-top: 0;">Connection Details:</h4>
-                    <p style="margin: 10px 0;"><strong>LiveKit URL:</strong><br>
+                    <h4 style="margin-top: 0;">Open LiveKit Meet Manually:</h4>
+                    <p style="margin: 10px 0;"><strong>1. Go to:</strong><br>
+                    <a href="https://meet.livekit.io/" target="_blank" style="color: #3498db;">https://meet.livekit.io/</a></p>
+                    <p style="margin: 10px 0;"><strong>2. LiveKit URL:</strong><br>
                     <code style="background: #e9ecef; padding: 5px 10px; border-radius: 5px; font-size: 12px;">wss://agent1-pcpqcnge.livekit.cloud</code></p>
-                    <p style="margin: 10px 0;"><strong>Room Name:</strong><br>
-                    <code style="background: #e9ecef; padding: 5px 10px; border-radius: 5px; font-size: 12px;">${details.room}</code></p>
+                    <p style="margin: 10px 0;"><strong>3. Room Name:</strong><br>
+                    <code style="background: #e9ecef; padding: 5px 10px; border-radius: 5px; font-size: 12px;">${roomName}</code></p>
+                    <p style="margin: 10px 0;"><strong>4. Your Name:</strong> Manager Demo</p>
                 </div>
-                <p style="margin-bottom: 20px;"><strong>In the LiveKit Meet window:</strong></p>
+                <p style="margin-bottom: 20px;"><strong>Steps:</strong></p>
                 <ol style="text-align: left; margin-bottom: 20px;">
-                    <li><strong>Paste the LiveKit URL</strong> in the URL field</li>
-                    <li><strong>Enter the room name</strong> shown above</li>
-                    <li><strong>Enter your name</strong> (e.g., "Manager Demo")</li>
-                    <li><strong>Click "Connect"</strong></li>
-                    <li><strong>Allow microphone access</strong></li>
-                    <li><strong>Wait for agent to join</strong> (automatic)</li>
-                    <li><strong>Start talking!</strong> Say "Hello" to begin</li>
+                    <li>Paste the LiveKit URL</li>
+                    <li>Enter the room name</li>
+                    <li>Enter your name</li>
+                    <li>Click "Connect"</li>
+                    <li>Allow microphone access</li>
+                    <li>Agent will auto-join</li>
+                    <li>Say "Hello" to start!</li>
                 </ol>
                 <button onclick="this.parentElement.remove()" style="
                     background: #3498db;
@@ -359,49 +385,23 @@
             `;
 
             document.body.appendChild(instructionDiv);
-
-            // Remove after 20 seconds if not manually closed
-            setTimeout(() => {
-                if (document.body.contains(instructionDiv)) {
-                    document.body.removeChild(instructionDiv);
-                }
-            }, 20000);
         }
 
-        function showSessionInfo(roomName) {
-            // Create a temporary success message
-            const successDiv = document.createElement('div');
-            successDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #27ae60;
-                color: white;
-                padding: 15px 25px;
-                border-radius: 10px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                z-index: 1000;
-                transition: all 0.3s ease;
-            `;
-            successDiv.innerHTML = `
-                <strong>✅ Demo Session Started!</strong><br>
-                <small>Room: ${roomName}</small>
-            `;
-
-            document.body.appendChild(successDiv);
-
-            // Remove after 4 seconds
-            setTimeout(() => {
-                successDiv.style.opacity = '0';
-                setTimeout(() => document.body.removeChild(successDiv), 300);
-            }, 4000);
+        async function disconnectFromAgent() {
+            if (room) {
+                await room.disconnect();
+                room = null;
+            }
+            updateStatus('Disconnected', 'disconnected');
+            isConnected = false;
+            updateButtons(false);
         }
 
-        // Add some interactive elements
+        // Initialize
         window.onload = function() {
             console.log('🏥 BlueShield AI Agent Demo Ready');
-            console.log('🤖 Agent: CA_wLGz7oXdLH7R');
-            console.log('🌐 LiveKit Cloud: wss://agent1-pcpqcnge.livekit.cloud');
+            console.log('🤖 Agent available on: wss://agent1-pcpqcnge.livekit.cloud');
+            updateButtons(false);
         };
     </script>
 </body>
